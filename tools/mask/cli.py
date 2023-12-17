@@ -25,18 +25,22 @@ class MaskArgs(FaceSwapArgs):
 
     @staticmethod
     def get_argument_list():
-        argument_list = []
-        argument_list.append(dict(
-            opts=("-a", "--alignments"),
-            action=FileFullPaths,
-            type=str,
-            group=_("data"),
-            required=False,
-            filetypes="alignments",
-            help=_("Full path to the alignments file to add the mask to if not at the default "
-                   "location. NB: If the input-type is faces and you wish to update the "
-                   "corresponding alignments file, then you must provide a value here as the "
-                   "location cannot be automatically detected.")))
+        argument_list = [
+            dict(
+                opts=("-a", "--alignments"),
+                action=FileFullPaths,
+                type=str,
+                group=_("data"),
+                required=False,
+                filetypes="alignments",
+                help=_(
+                    "Full path to the alignments file to add the mask to if not at the default "
+                    "location. NB: If the input-type is faces and you wish to update the "
+                    "corresponding alignments file, then you must provide a value here as the "
+                    "location cannot be automatically detected."
+                ),
+            )
+        ]
         argument_list.append(dict(
             opts=("-i", "--input"),
             action=DirOrFileFullPaths,

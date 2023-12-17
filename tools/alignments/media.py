@@ -136,13 +136,12 @@ class MediaLoader():
                 os.path.isfile(self.folder) and
                 os.path.splitext(self.folder)[1].lower() in _video_extensions):
             logger.verbose("Video exists at: '%s'", self.folder)  # type: ignore
-            retval = cv2.VideoCapture(self.folder)  # pylint: disable=no-member
-            # TODO ImageIO single frame seek seems slow. Look into this
-            # retval = imageio.get_reader(self.folder, "ffmpeg")
+            return cv2.VideoCapture(self.folder)
+                # TODO ImageIO single frame seek seems slow. Look into this
+                # retval = imageio.get_reader(self.folder, "ffmpeg")
         else:
             logger.verbose("Folder exists at '%s'", self.folder)  # type: ignore
-            retval = None
-        return retval
+            return None
 
     @staticmethod
     def valid_extension(filename) -> bool:
@@ -179,12 +178,10 @@ class MediaLoader():
             The loaded image
         """
         if self.is_video:
-            image = self.load_video_frame(filename)
-        else:
-            src = os.path.join(self.folder, filename)
-            logger.trace("Loading image: '%s'", src)  # type: ignore
-            image = read_image(src, raise_error=True)
-        return image
+            return self.load_video_frame(filename)
+        src = os.path.join(self.folder, filename)
+        logger.trace("Loading image: '%s'", src)  # type: ignore
+        return read_image(src, raise_error=True)
 
     def load_video_frame(self, filename: str) -> np.ndarray:
         """ Load a requested frame from video
@@ -232,8 +229,7 @@ class MediaLoader():
         loader = ImagesLoader(self.folder, queue_size=32, count=self._count)
         if skip_list is not None:
             loader.add_skip_list(skip_list)
-        for filename, image in loader.load():
-            yield filename, image
+        yield from loader.load()
 
     @staticmethod
     def save_image(output_folder: str,
@@ -242,7 +238,7 @@ class MediaLoader():
                    metadata: PNGHeaderDict | None = None) -> None:
         """ Save an image """
         output_file = os.path.join(output_folder, filename)
-        output_file = os.path.splitext(output_file)[0] + ".png"
+        output_file = f"{os.path.splitext(output_file)[0]}.png"
         logger.trace("Saving image: '%s'", output_file)  # type: ignore
         if metadata:
             encoded_image = cv2.imencode(".png", image)[1]
@@ -300,13 +296,13 @@ class Faces(MediaLoader):
         if log:
             logger.warning("Legacy faces discovered. These faces will be updated")
 
-        data = update_legacy_png_header(fullpath, self._alignments)
-        if not data:
+        if data := update_legacy_png_header(fullpath, self._alignments):
+            return data
+        else:
             raise FaceswapError(
                 f"Some of the faces being passed in from '{self.folder}' could not be "
                 f"matched to the alignments file '{self._alignments.file}'\nPlease double "
                 "check your sources and try again.")
-        return data
 
     def _handle_duplicate(self,
                           fullpath: str,
@@ -388,9 +384,7 @@ class Faces(MediaLoader):
                 filter_count += 1
                 continue
 
-            retval = (os.path.basename(fullpath), sub_dict)
-            yield retval
-
+            yield (os.path.basename(fullpath), sub_dict)
         if self._alignments is not None:
             logger.debug("Faces filtered out that did not exist in alignments file: %s",
                          filter_count)
@@ -440,8 +434,7 @@ class Frames(MediaLoader):
             The full framename, the filename and the file extension of the frame
         """
         iterator = self.process_video if self.is_video else self.process_frames
-        for item in iterator():
-            yield item
+        yield from iterator()
 
     def process_frames(self) -> Generator[dict[str, str], None, None]:
         """ Process exported Frames
@@ -492,10 +485,13 @@ class Frames(MediaLoader):
         dict
             Fullname as key, tuple of frame name and extension as value
         """
-        frames: dict[str, tuple[str, str]] = {}
-        for frame in T.cast(list[dict[str, str]], self.file_list_sorted):
-            frames[frame["frame_fullname"]] = (frame["frame_name"],
-                                               frame["frame_extension"])
+        frames: dict[str, tuple[str, str]] = {
+            frame["frame_fullname"]: (
+                frame["frame_name"],
+                frame["frame_extension"],
+            )
+            for frame in T.cast(list[dict[str, str]], self.file_list_sorted)
+        }
         logger.trace(frames)  # type: ignore
         return frames
 

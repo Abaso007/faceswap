@@ -95,8 +95,7 @@ class InfoLoader():
         alignments: dict or ``None``
             The alignments dict for 'all' and 'meta' infor_types otherwise ``None``
         """
-        iterator = self._get_iterator()
-        return iterator
+        return self._get_iterator()
 
     def _get_alignments(self,
                         filename: str,
@@ -330,8 +329,10 @@ class SortMethod():
         else:
             pre, post = zip(*[str(r).split(".") for r in rounded])
             rpad = max(len(x) for x in post)
-            retval = [f"{str(int(left))}.{str(int(right)).ljust(rpad, '0')}"
-                      for left, right in zip(pre, post)]
+            retval = [
+                f"{int(left)}.{str(int(right)).ljust(rpad, '0')}"
+                for left, right in zip(pre, post)
+            ]
         logger.debug("rounded values: %s, formatted labels: %s", rounded, retval)
         return retval
 
@@ -554,9 +555,9 @@ class SortMultiMethod(SortMethod):
         sorted_ = self._result
         output: list[list[str]] = []
         for bin_ in tqdm(self._binned, desc="Binning and sorting", file=sys.stdout, leave=False):
-            indices: dict[int, str] = {}
-            for filename in bin_:
-                indices[sorted_.index(filename)] = filename
+            indices: dict[int, str] = {
+                sorted_.index(filename): filename for filename in bin_
+            }
             output.append([indices[idx] for idx in sorted(indices)])
         return output
 
@@ -600,8 +601,7 @@ class SortBlur(SortMethod):
         if image.ndim == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blur_map = cv2.Laplacian(image, cv2.CV_32F)
-        score = np.var(blur_map) / np.sqrt(image.shape[0] * image.shape[1])
-        return score
+        return np.var(blur_map) / np.sqrt(image.shape[0] * image.shape[1])
 
     def estimate_blur_fft(self,
                           image: np.ndarray,
@@ -640,9 +640,7 @@ class SortBlur(SortMethod):
         ifft_shift = np.fft.ifftshift(fft_shift)
         shift_back = np.fft.ifft2(ifft_shift)
         magnitude = np.log(np.abs(shift_back))
-        score = np.mean(magnitude)
-
-        return score
+        return np.mean(magnitude)
 
     def score_image(self,
                     filename: str,
@@ -764,8 +762,7 @@ class SortColor(SortMethod):
         for idx, _bin in enumerate(img_bins):
             bins[_bin].append(self._result[idx][0])
 
-        retval = [b for b in bins if b]
-        return retval
+        return [b for b in bins if b]
 
     def score_image(self,
                     filename: str,
@@ -919,7 +916,7 @@ class SortFace(SortMethod):
         list
             List of bins of filenames
         """
-        num_bins = len(set(int(i[1]) for i in self._result))
+        num_bins = len({int(i[1]) for i in self._result})
         logger.info("Grouping by %s...", self.__class__.__name__.replace("Sort", ""))
         bins: list[list[str]] = [[] for _ in range(num_bins)]
 
@@ -960,13 +957,15 @@ class SortHistogram(SortMethod):
                       desc="Comparing histograms",
                       file=sys.stdout,
                       leave=False):
-            score_total = 0
-            for j in range(0, img_list_len):
-                if i == j:
-                    continue
-                score_total += cv2.compareHist(self._result[i][1],
-                                               self._result[j][1],
-                                               cv2.HISTCMP_BHATTACHARYYA)
+            score_total = sum(
+                cv2.compareHist(
+                    self._result[i][1],
+                    self._result[j][1],
+                    cv2.HISTCMP_BHATTACHARYYA,
+                )
+                for j in range(0, img_list_len)
+                if i != j
+            )
             self._result[i][2] = score_total
 
         self._result = sorted(self._result, key=operator.itemgetter(2), reverse=True)
@@ -1017,19 +1016,13 @@ class SortHistogram(SortMethod):
         msg = "dissimilarity" if self._is_dissim else "similarity"
         logger.info("Grouping by %s...", msg)
 
-        # Groups are of the form: group_num -> reference histogram
-        reference_groups: dict[int, list[np.ndarray]] = {}
-
-        # Bins array, where index is the group number and value is
-        # an array containing the file paths to the images in that group
-        bins: list[list[str]] = []
-
         threshold = self._threshold
 
         img_list_len = len(self._result)
-        reference_groups[0] = [T.cast(np.ndarray, self._result[0][1])]
-        bins.append([self._result[0][0]])
-
+        reference_groups: dict[int, list[np.ndarray]] = {
+            0: [T.cast(np.ndarray, self._result[0][1])]
+        }
+        bins: list[list[str]] = [[self._result[0][0]]]
         for i in tqdm(range(1, img_list_len),
                       desc="Grouping",
                       file=sys.stdout,

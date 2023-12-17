@@ -221,7 +221,7 @@ class IO():
     def _get_save_averages(self) -> list[float]:
         """ Return the average loss since the last save iteration and reset historical loss """
         logger.debug("Getting save averages")
-        if not all(loss for loss in self._history):
+        if not all(self._history):
             logger.debug("No loss in history")
             retval = []
         else:
@@ -258,7 +258,7 @@ class IO():
 
         if backup:  # Update lowest loss values to the state file
             # pylint:disable=unnecessary-comprehension
-            old_avgs = {key: val for key, val in self._plugin.state.lowest_avg_loss.items()}
+            old_avgs = dict(self._plugin.state.lowest_avg_loss.items())
             self._plugin.state.lowest_avg_loss["a"] = save_averages[0]
             self._plugin.state.lowest_avg_loss["b"] = save_averages[1]
             logger.debug("Updated lowest historical save iteration averages from: %s to: %s",
@@ -322,7 +322,7 @@ class Weights():
         msg = ""
         if not os.path.exists(weights_file):
             msg = f"Load weights selected, but the path '{weights_file}' does not exist."
-        elif not os.path.splitext(weights_file)[-1].lower() == ".h5":
+        elif os.path.splitext(weights_file)[-1].lower() != ".h5":
             msg = (f"Load weights selected, but the path '{weights_file}' is not a valid Keras "
                    f"model (.h5) file.")
 
@@ -365,7 +365,7 @@ class Weights():
         if not self._weights_file:
             logger.debug("No weights file provided. Not loading weights.")
             return
-        if model_exists and self._weights_file:
+        if model_exists:
             logger.warning("Ignoring weights file '%s' as this model is resuming.",
                            self._weights_file)
             return

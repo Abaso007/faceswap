@@ -31,8 +31,7 @@ class Model(ModelBase):
         outputs = [decoder(Concatenate()([inter_a(encoder_a), inter_both(encoder_a)])),
                    decoder(Concatenate()([inter_b(encoder_b), inter_both(encoder_b)]))]
 
-        autoencoder = KModel(inputs, outputs, name=self.model_name)
-        return autoencoder
+        return KModel(inputs, outputs, name=self.model_name)
 
     def encoder(self):
         """ Encoder Network """

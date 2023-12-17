@@ -71,9 +71,7 @@ class Git():
         if not self._available:
             return []
         success, status = self._from_git("status -uno")
-        if not success or not status:
-            return []
-        return status
+        return [] if not success or not status else status
 
     @property
     def branch(self) -> str:
@@ -87,9 +85,7 @@ class Git():
         if not self._available:
             return []
         success, branches = self._from_git("branch -a")
-        if not success or not branches:
-            return []
-        return branches
+        return [] if not success or not branches else branches
 
     def update_remote(self) -> bool:
         """ Update all branches to track remote
@@ -99,9 +95,7 @@ class Git():
         bool
             ``True`` if update was succesful otherwise ``False``
         """
-        if not self._available:
-            return False
-        return self._from_git("remote update")[0]
+        return False if not self._available else self._from_git("remote update")[0]
 
     def pull(self) -> bool:
         """ Pull the current branch
@@ -111,9 +105,7 @@ class Git():
         bool
             ``True`` if pull is successful otherwise ``False``
         """
-        if not self._available:
-            return False
-        return self._from_git("pull")[0]
+        return False if not self._available else self._from_git("pull")[0]
 
     def checkout(self, branch: str) -> bool:
         """ Checkout the requested branch
@@ -128,9 +120,7 @@ class Git():
         bool
             ``True`` if the branch was succesfully checkout out otherwise ``False``
         """
-        if not self._available:
-            return False
-        return self._from_git(f"checkout {branch}")[0]
+        return self._from_git(f"checkout {branch}")[0] if self._available else False
 
     def get_commits(self, count: int) -> list[str]:
         """ Obtain the last commits to the repo
@@ -148,9 +138,7 @@ class Git():
         if not self._available:
             return []
         success, commits = self._from_git(f"log --pretty=oneline --abbrev-commit -n {count}")
-        if not success or not commits:
-            return []
-        return commits
+        return [] if not success or not commits else commits
 
 
 git = Git()

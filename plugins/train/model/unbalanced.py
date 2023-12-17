@@ -30,8 +30,7 @@ class Model(ModelBase):
 
         outputs = [self.decoder_a()(encoder_a), self.decoder_b()(encoder_b)]
 
-        autoencoder = KModel(inputs, outputs, name=self.model_name)
-        return autoencoder
+        return KModel(inputs, outputs, name=self.model_name)
 
     def encoder(self):
         """ Unbalanced Encoder """

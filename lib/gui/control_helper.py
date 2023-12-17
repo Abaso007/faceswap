@@ -185,8 +185,7 @@ class ControlPanelOption():
     def group(self):
         """ Return group or _master if no group set """
         group = self._options["group"]
-        group = "_master" if group is None else group
-        return group
+        return "_master" if group is None else group
 
     @property
     def subgroup(self):
@@ -202,8 +201,7 @@ class ControlPanelOption():
     def value(self):
         """ Return either initial value or default """
         val = self._options["initial_value"]
-        val = self.default if val is None else val
-        return val
+        return self.default if val is None else val
 
     @property
     def choices(self):
@@ -242,7 +240,7 @@ class ControlPanelOption():
             helptext = helptext[2:].replace("\nL|", "\n - ").replace("\n", "\n\n")
         else:
             helptext = helptext.replace("\n\t", "\n - ").replace("%%", "%")
-        helptext = self.title + " - " + helptext
+        helptext = f"{self.title} - {helptext}"
         logger.debug("Formatted control help: (name: '%s', help: '%s'", self.name, helptext)
         return helptext
 
@@ -692,17 +690,21 @@ class AutoFillContainer():
         to :attr:`_widget_config` """
         zipped = zip_longest(*(subframe.winfo_children() for subframe in self.subframes))
         children = [child for group in zipped for child in group if child is not None]
-        self._widget_config = [{"class": child.__class__,
-                                "id": str(child),
-                                "tooltip": _RECREATE_OBJECTS["tooltips"].get(str(child), None),
-                                "rc_menu": _RECREATE_OBJECTS["contextmenus"].get(str(child), None),
-                                "pack_info": self.pack_config_cleaner(child),
-                                "name": child.winfo_name(),
-                                "config": self.config_cleaner(child),
-                                "children": self.get_all_children_config(child, []),
-                                # Some children have custom kwargs, so keep dicts in sync
-                                "custom_kwargs": self._custom_kwargs(child)}
-                               for idx, child in enumerate(children)]
+        self._widget_config = [
+            {
+                "class": child.__class__,
+                "id": str(child),
+                "tooltip": _RECREATE_OBJECTS["tooltips"].get(str(child), None),
+                "rc_menu": _RECREATE_OBJECTS["contextmenus"].get(str(child), None),
+                "pack_info": self.pack_config_cleaner(child),
+                "name": child.winfo_name(),
+                "config": self.config_cleaner(child),
+                "children": self.get_all_children_config(child, []),
+                # Some children have custom kwargs, so keep dicts in sync
+                "custom_kwargs": self._custom_kwargs(child),
+            }
+            for child in children
+        ]
         logger.debug("Compiled AutoFillContainer children: %s", self._widget_config)
 
     @classmethod
@@ -754,8 +756,10 @@ class AutoFillContainer():
                 # bindings on the headers, to auto-hide the contents. To ensure that all child
                 # information (specifically pack information) can be collected, we need to pack
                 # any hidden sub-frames. These are then hidden again once collected.
-                if not_mapped and (child.winfo_name() == "toggledframe_subframe" or
-                                   child.winfo_name() == "chkbuttons"):
+                if not_mapped and child.winfo_name() in [
+                    "toggledframe_subframe",
+                    "chkbuttons",
+                ]:
                     child.pack(fill=tk.X, expand=True)
                     child.update_idletasks()  # Updates the packing info of children
                     unpack.add(child)
@@ -1057,9 +1061,7 @@ class ControlBuilder():
         """
         logger.debug("raw help: %s", helptext)
         all_help = helptext.splitlines()
-        intro = ""
-        if any(line.startswith(" - ") for line in all_help):
-            intro = all_help[0]
+        intro = all_help[0] if any(line.startswith(" - ") for line in all_help) else ""
         retval = (intro,
                   {re.sub(r"[^A-Za-z0-9\-\_]+", "",
                           line.split()[1].lower()): " ".join(line.replace("_", " ").split()[1:])
@@ -1113,9 +1115,7 @@ class ControlBuilder():
         value: str
             The slider text entry value to validate
         """
-        if value.isdigit() or value == "":
-            return True
-        return False
+        return bool(value.isdigit() or value == "")
 
     @staticmethod
     def slider_check_float(value):
@@ -1248,16 +1248,17 @@ class FileBrowser():
     @property
     def helptext(self):
         """ Dict containing tooltip text for buttons """
-        retval = {"folder": _("Select a folder..."),
-                  "load": _("Select a file..."),
-                  "load2": _("Select a file..."),
-                  "picture": _("Select a folder of images..."),
-                  "video": _("Select a video..."),
-                  "model": _("Select a model folder..."),
-                  "multi_load": _("Select one or more files..."),
-                  "context": _("Select a file or folder..."),
-                  "save_as": _("Select a save location...")}
-        return retval
+        return {
+            "folder": _("Select a folder..."),
+            "load": _("Select a file..."),
+            "load2": _("Select a file..."),
+            "picture": _("Select a folder of images..."),
+            "video": _("Select a video..."),
+            "model": _("Select a model folder..."),
+            "multi_load": _("Select one or more files..."),
+            "context": _("Select a file or folder..."),
+            "save_as": _("Select a save location..."),
+        }
 
     @staticmethod
     def format_action_option(action_option):
@@ -1266,9 +1267,7 @@ class FileBrowser():
             return action_option
         if action_option.startswith("--"):
             return action_option[2:]
-        if action_option.startswith("-"):
-            return action_option[1:]
-        return action_option
+        return action_option[1:] if action_option.startswith("-") else action_option
 
     def add_browser_buttons(self):
         """ Add correct file browser button for control """
@@ -1291,7 +1290,7 @@ class FileBrowser():
             else:
                 lbl = browser
             img = get_images().icons[lbl]
-            action = getattr(self, "ask_" + browser)
+            action = getattr(self, f"ask_{browser}")
             cmd = partial(action, filepath=self.tk_var, filetypes=self.filetypes)
             fileopn = tk.Button(frame,
                                 image=img,
@@ -1322,24 +1321,21 @@ class FileBrowser():
             that will store the path to a directory.
             :param filetypes: Unused argument to allow
             filetypes to be given in ask_load(). """
-        dirname = FileHandler("dir", filetypes).return_file
-        if dirname:
+        if dirname := FileHandler("dir", filetypes).return_file:
             logger.debug(dirname)
             filepath.set(dirname)
 
     @staticmethod
     def ask_load(filepath, filetypes):
         """ Pop-up to get path to a file """
-        filename = FileHandler("filename", filetypes).return_file
-        if filename:
+        if filename := FileHandler("filename", filetypes).return_file:
             logger.debug(filename)
             filepath.set(filename)
 
     @staticmethod
     def ask_multi_load(filepath, filetypes):
         """ Pop-up to get path to a file """
-        filenames = FileHandler("filename_multi", filetypes).return_file
-        if filenames:
+        if filenames := FileHandler("filename_multi", filetypes).return_file:
             final_names = " ".join(f"\"{fname}\"" for fname in filenames)
             logger.debug(final_names)
             filepath.set(final_names)
@@ -1347,8 +1343,7 @@ class FileBrowser():
     @staticmethod
     def ask_save(filepath, filetypes=None):
         """ Pop-up to get path to save a new file """
-        filename = FileHandler("save_filename", filetypes).return_file
-        if filename:
+        if filename := FileHandler("save_filename", filetypes).return_file:
             logger.debug(filename)
             filepath.set(filename)
 
@@ -1362,11 +1357,12 @@ class FileBrowser():
         logger.debug("Getting context filebrowser")
         selected_action = self.action_option.get()
         selected_variable = self.destination
-        filename = FileHandler("context",
-                               filetypes,
-                               command=self.command,
-                               action=selected_action,
-                               variable=selected_variable).return_file
-        if filename:
+        if filename := FileHandler(
+            "context",
+            filetypes,
+            command=self.command,
+            action=selected_action,
+            variable=selected_variable,
+        ).return_file:
             logger.debug(filename)
             filepath.set(filename)

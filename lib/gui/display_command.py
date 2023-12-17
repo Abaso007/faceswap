@@ -157,11 +157,10 @@ class PreviewTrain(DisplayOptionalPage):  # pylint: disable=too-many-ancestors
         if self._display is None:
             return
 
-        location = FileHandler("dir", None).return_file
-        if not location:
+        if location := FileHandler("dir", None).return_file:
+            self._display.save(location)
+        else:
             return
-
-        self._display.save(location)
 
 
 class GraphDisplay(DisplayOptionalPage):  # pylint: disable=too-many-ancestors
@@ -334,7 +333,7 @@ class GraphDisplay(DisplayOptionalPage):  # pylint: disable=too-many-ancestors
             logger.trace("Loading graph")  # type:ignore[attr-defined]
             self.display_item = Session
             self._add_trace_variables()
-        elif Session.is_training and self.display_item is not None:
+        elif Session.is_training:
             logger.trace("Graph already displayed. Nothing to do.")  # type:ignore[attr-defined]
         else:
             logger.trace("Clearing graph")  # type:ignore[attr-defined]
@@ -359,7 +358,7 @@ class GraphDisplay(DisplayOptionalPage):  # pylint: disable=too-many-ancestors
             return
 
         loss_keys = [key for key in loss_keys if key != "total"]
-        display_tabs = sorted(set(key[:-1].rstrip("_") for key in loss_keys))
+        display_tabs = sorted({key[:-1].rstrip("_") for key in loss_keys})
 
         for loss_key in display_tabs:
             tabname = loss_key.replace("_", " ").title()
@@ -442,8 +441,8 @@ class GraphDisplay(DisplayOptionalPage):  # pylint: disable=too-many-ancestors
         """ Add tracing for when the option sliders are updated, for updating the graph. """
         for name, action in zip(T.get_args(T.Literal["smoothgraph", "display_iterations"]),
                                 (self._smooth_amount_callback, self._iteration_limit_callback)):
-            var = self.vars[name]
             if name not in self._trace_vars:
+                var = self.vars[name]
                 self._trace_vars[name] = (var, var.trace("w", action))
 
     def _clear_trace_variables(self) -> None:

@@ -90,7 +90,7 @@ class TrainerBase():
 
         self._model.state.add_session_batchsize(batch_size)
         self._images = images
-        self._sides = sorted(key for key in self._images.keys())
+        self._sides = sorted(iter(self._images))
 
         self._tensorboard = self._set_tensorboard()
         self._samples = _Samples(self._model,
@@ -282,12 +282,9 @@ class TrainerBase():
 
         # Bug in TF 2.8/2.9/2.10 where batch recording got deleted.
         # ref: https://github.com/keras-team/keras/issues/16173
-        with tf.summary.record_if(True), self._tensorboard._train_writer.as_default():  # noqa:E501  pylint:disable=protected-access,not-context-manager
+        with (tf.summary.record_if(True), self._tensorboard._train_writer.as_default()):  # noqa:E501  pylint:disable=protected-access,not-context-manager
             for name, value in logs.items():
-                tf.summary.scalar(
-                    "batch_" + name,
-                    value,
-                    step=self._tensorboard._train_step)  # pylint:disable=protected-access
+                tf.summary.scalar(f"batch_{name}", value, step=self._tensorboard._train_step)
         # TODO revert this code if fixed in tensorflow
         # self._tensorboard.on_train_batch_end(self._model.iterations, logs=logs)
 
@@ -885,7 +882,7 @@ class _Timelapse():  # pylint:disable=too-few-public-methods
         image = self._samples.show_sample()
         if image is None:
             return
-        filename = os.path.join(self._output_file, str(int(time.time())) + ".jpg")
+        filename = os.path.join(self._output_file, f"{int(time.time())}.jpg")
 
         cv2.imwrite(filename, image)
         logger.debug("Created time-lapse: '%s'", filename)
