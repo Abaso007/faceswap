@@ -475,9 +475,11 @@ class AlignedFace():
         self._dtype = dtype
         self._is_aligned = is_aligned
         self._source_centering: CenteringType = "legacy" if is_legacy and is_aligned else "head"
-        self._matrices = {"legacy": _umeyama(landmarks[17:], _MEAN_FACE, True)[0:2],
-                          "face": np.array([]),
-                          "head": np.array([])}
+        self._matrices = {
+            "legacy": _umeyama(landmarks[17:], _MEAN_FACE, True)[:2],
+            "face": np.array([]),
+            "head": np.array([]),
+        }
         self._padding = self._padding_from_coverage(size, coverage_ratio)
 
         self._cache = _FaceCache()
@@ -877,12 +879,7 @@ def _umeyama(source: np.ndarray, destination: np.ndarray, estimate_scale: bool) 
     else:
         retval[:dim, :dim] = U @ np.diag(d) @ V
 
-    if estimate_scale:
-        # Eq. (41) and (42).
-        scale = 1.0 / src_demean.var(axis=0).sum() * (S @ d)
-    else:
-        scale = 1.0
-
+    scale = 1.0 / src_demean.var(axis=0).sum() * (S @ d) if estimate_scale else 1.0
     retval[:dim, dim] = dst_mean - scale * (retval[:dim, :dim] @ src_mean.T)
     retval[:dim, :dim] *= scale
 

@@ -236,8 +236,7 @@ class Loss():
                               weight=weight,
                               mask_channel=self._mask_channels[0])
 
-        channel_idx = 1
-        for section in ("eye_multiplier", "mouth_multiplier"):
+        for channel_idx, section in enumerate(("eye_multiplier", "mouth_multiplier"), start=1):
             mask_channel = self._mask_channels[channel_idx]
             multiplier = self._config[section] * 1.
             if multiplier > 1.:
@@ -245,7 +244,6 @@ class Loss():
                 loss_wrapper.add_loss(self._get_function(loss_function),
                                       weight=weight * multiplier,
                                       mask_channel=mask_channel)
-            channel_idx += 1
 
     def _get_mask_channels(self) -> list[int]:
         """ Obtain the channels from the face targets that the masks reside in from the training

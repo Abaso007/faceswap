@@ -207,15 +207,13 @@ class DataGenerator():
             while True:
                 if do_shuffle:
                     shuffle(imgs)
-                for img in imgs:
-                    yield img
+                yield from imgs
 
         img_iter = _img_iter(self._images[:])
         while True:
             img_paths = [next(img_iter)  # pylint:disable=stop-iteration-return
                          for _ in range(self._batch_size)]
-            retval = self._process_batch(img_paths)
-            yield retval
+            yield self._process_batch(img_paths)
 
     def _get_images_with_meta(self, filenames: list[str]) -> tuple[np.ndarray, list[DetectedFace]]:
         """ Obtain the raw face images with associated :class:`DetectedFace` objects for this
@@ -792,12 +790,13 @@ class Feeder():
         logger.debug("Loading generator, side: %s, is_display: %s,  batch_size: %s",
                      side, is_display, batch_size)
         generator = PreviewDataGenerator if is_display else TrainingDataGenerator
-        retval = generator(self._config,
-                           self._model,
-                           side,
-                           self._images[side] if images is None else images,
-                           self._batch_size if batch_size is None else batch_size)
-        return retval
+        return generator(
+            self._config,
+            self._model,
+            side,
+            self._images[side] if images is None else images,
+            self._batch_size if batch_size is None else batch_size,
+        )
 
     def _set_preview_feed(self) -> dict[T.Literal["a", "b"], Generator[BatchType, None, None]]:
         """ Set the preview feed for this feeder.
@@ -920,9 +919,11 @@ class Feeder():
         retval: dict[T.Literal["a", "b"], list[np.ndarray]] = {}
         for side in T.get_args(T.Literal["a", "b"]):
             logger.debug("Compiling samples: (side: '%s', samples: %s)", side, num_images)
-            retval[side] = [feed[side][0:num_images],
-                            samples[side][0:num_images],
-                            masks[side][0:num_images]]
+            retval[side] = [
+                feed[side][:num_images],
+                samples[side][:num_images],
+                masks[side][:num_images],
+            ]
         logger.debug("Compiled Samples: %s", {k: [i.shape for i in v] for k, v in retval.items()})
         return retval
 

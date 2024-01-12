@@ -171,13 +171,11 @@ class FileHandler():  # pylint:disable=too-few-public-methods
         tkinter.Frame or ``None``
             The dummy master frame for Linux systems, otherwise ``None``
         """
-        if platform.system().lower() == "linux":
-            frame = tk.Frame()
-            frame.option_add("*foreground", "black")
-            retval: tk.Frame | None = frame
-        else:
-            retval = None
-        return retval
+        if platform.system().lower() != "linux":
+            return None
+        frame = tk.Frame()
+        frame.option_add("*foreground", "black")
+        return frame
 
     def _remove_dummy_master(self) -> None:
         """ Destroy the dummy master widget on Linux systems. """
@@ -197,8 +195,9 @@ class FileHandler():  # pylint:disable=too-few-public-methods
             The default file extension for each file type
         """
         defaults: dict[str, str | None] = {
-            key: next(ext for ext in val[0][1].split(" ")).replace("*", "")
-            for key, val in self._filetypes.items()}
+            key: next(iter(val[0][1].split(" "))).replace("*", "")
+            for key, val in self._filetypes.items()
+        }
         defaults["default"] = None
         defaults["video"] = ".mp4"
         defaults["image"] = ".png"

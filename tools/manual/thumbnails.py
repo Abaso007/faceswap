@@ -83,7 +83,7 @@ class ThumbsCreator():
 
         if self._is_video and single_process:
             self._num_threads = 1
-        elif self._is_video and not single_process:
+        elif self._is_video:
             assert self._meta.key_frames is not None
             self._num_threads = min(self._num_threads, len(self._meta.key_frames))
         else:
@@ -209,7 +209,7 @@ class ThumbsCreator():
                      pts_start, pts_end, start_index, segment_count)
         reader = self._get_reader(pts_start, pts_end)
         idx = 0
-        sample_filename = next(fname for fname in self._alignments.data)
+        sample_filename = next(iter(self._alignments.data))
         vidname = sample_filename[:sample_filename.rfind("_")]
         for idx, frame in enumerate(reader):
             frame_idx = idx + start_index

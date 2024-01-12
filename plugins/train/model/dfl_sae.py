@@ -73,8 +73,7 @@ class Model(ModelBase):
         else:
             outputs = [self.decoder("a", enc_output_shape)(encoder_a),
                        self.decoder("b", enc_output_shape)(encoder_b)]
-        autoencoder = KModel(inputs, outputs, name=self.model_name)
-        return autoencoder
+        return KModel(inputs, outputs, name=self.model_name)
 
     def encoder_df(self):
         """ DFL SAE DF Encoder Network"""

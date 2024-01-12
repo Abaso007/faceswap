@@ -63,8 +63,7 @@ class Model(ModelBase):
 
         outputs = [self.decoder_a()(encoder_a), decoder_b()(encoder_b)]
 
-        autoencoder = KModel(inputs, outputs, name=self.model_name)
-        return autoencoder
+        return KModel(inputs, outputs, name=self.model_name)
 
     def encoder(self):
         """ DeLight Encoder Network """
@@ -108,8 +107,6 @@ class Model(ModelBase):
         """ DeLight Decoder A(old face) Network """
         input_ = Input(shape=(4, 4, 1024))
         dec_a_complexity = 256
-        mask_complexity = 128
-
         var_xy = input_
         var_xy = UpSampling2D(self.upscale_ratio, interpolation='bilinear')(var_xy)
 
@@ -125,6 +122,8 @@ class Model(ModelBase):
 
         if self.config.get("learn_mask", False):
             var_y = var_xy  # mask decoder
+            mask_complexity = 128
+
             var_y = Upscale2xBlock(mask_complexity, activation="leakyrelu", fast=False)(var_y)
             var_y = Upscale2xBlock(mask_complexity // 2, activation="leakyrelu", fast=False)(var_y)
             var_y = Upscale2xBlock(mask_complexity // 4, activation="leakyrelu", fast=False)(var_y)
@@ -141,8 +140,6 @@ class Model(ModelBase):
         input_ = Input(shape=(4, 4, 1024))
 
         dec_b_complexity = 512
-        mask_complexity = 128
-
         var_xy = input_
 
         var_xy = UpscaleBlock(512, scale_factor=self.upscale_ratio, activation="leakyrelu")(var_xy)
@@ -160,6 +157,8 @@ class Model(ModelBase):
         if self.config.get("learn_mask", False):
             var_y = var_xy  # mask decoder
 
+            mask_complexity = 128
+
             var_y = Upscale2xBlock(mask_complexity, activation="leakyrelu", fast=False)(var_y)
             var_y = Upscale2xBlock(mask_complexity // 2, activation="leakyrelu", fast=False)(var_y)
             var_y = Upscale2xBlock(mask_complexity // 4, activation="leakyrelu", fast=False)(var_y)
@@ -176,8 +175,6 @@ class Model(ModelBase):
         input_ = Input(shape=(4, 4, 1024))
 
         dec_b_complexity = 512
-        mask_complexity = 128
-
         var_xy = input_
 
         var_xy = Upscale2xBlock(512,
@@ -211,6 +208,8 @@ class Model(ModelBase):
         if self.config.get("learn_mask", False):
             var_y = var_xy  # mask decoder
             var_y = LeakyReLU(alpha=0.1)(var_y)
+
+            mask_complexity = 128
 
             var_y = Upscale2xBlock(mask_complexity, activation="leakyrelu", fast=False)(var_y)
             var_y = Upscale2xBlock(mask_complexity // 2, activation="leakyrelu", fast=False)(var_y)

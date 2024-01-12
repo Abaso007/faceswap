@@ -357,9 +357,7 @@ class HelpMenu(tk.Menu):  # pylint:disable=too-many-ancestors
         """ Check for updates and clone repository """
         logger.debug("Updating Faceswap...")
         self.root.config(cursor="watch")
-        success = False
-        if self._check_for_updates():
-            success = self._do_update()
+        success = self._do_update() if self._check_for_updates() else False
         update_deps.main(is_gui=True)
         if success:
             logger.info("Please restart Faceswap to complete the update.")

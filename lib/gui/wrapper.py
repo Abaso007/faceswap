@@ -312,10 +312,10 @@ class FaceswapControl():
         if self._command == "effmpeg" and self._capture_ffmpeg(output):
             return True
 
-        if self._command not in ("train", "effmpeg") and self._capture_tqdm(output):
-            return True
-
-        return False
+        return bool(
+            self._command not in ("train", "effmpeg")
+            and self._capture_tqdm(output)
+        )
 
     def _process_training_stdout(self, output: str) -> None:
         """ Process any triggers that are required to update the GUI when Faceswap is running a
@@ -360,7 +360,7 @@ class FaceswapControl():
                     break
                 raise
 
-            if output == "" and self._process.poll() is not None:
+            if not output and self._process.poll() is not None:
                 break
 
             if output and self._process_progress_stdout(output):
@@ -391,7 +391,7 @@ class FaceswapControl():
                 if str(err).lower().startswith("i/o operation on closed file"):
                     break
                 raise
-            if output == "" and self._process.poll() is not None:
+            if not output and self._process.poll() is not None:
                 break
             if output:
                 if self._command != "train" and self._capture_tqdm(output):
@@ -440,7 +440,7 @@ class FaceswapControl():
             return False
 
         loss = self._consoleregex["loss"].findall(string)
-        if len(loss) != 2 or not all(len(itm) == 3 for itm in loss):
+        if len(loss) != 2 or any(len(itm) != 3 for itm in loss):
             logger.trace("Not loss message. Returning False")  # type:ignore[attr-defined]
             return False
 
@@ -547,9 +547,7 @@ class FaceswapControl():
             logger.trace("Not ffmpeg message. Returning False")  # type:ignore[attr-defined]
             return False
 
-        message = ""
-        for item in ffmpeg:
-            message += f"{item[0]}: {item[1]}  "
+        message = "".join(f"{item[0]}: {item[1]}  " for item in ffmpeg)
         if not message:
             logger.trace(  # type:ignore[attr-defined]
                 "Error creating ffmpeg message. Returning False")
@@ -685,7 +683,7 @@ class FaceswapControl():
         """
         logger.debug("Setting final status. returncode: %s", returncode)
         self._train_stats = {"iterations": 0, "timestamp": None}
-        if returncode in (0, 3221225786):
+        if returncode in {0, 3221225786}:
             status = "Ready"
         elif returncode == -15:
             status = f"Terminated - {self._command}.py"

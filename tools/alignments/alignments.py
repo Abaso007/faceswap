@@ -92,10 +92,11 @@ class Alignments():  # pylint:disable=too-few-public-methods
             sys.exit(1)
 
         logger.info("Batch mode selected. Processing alignments: %s", alignments)
-        retval = {"alignments_file": alignments,
-                  "faces_dir": [None for _ in range(len(alignments))],
-                  "frames_dir": [None for _ in range(len(alignments))]}
-        return retval
+        return {
+            "alignments_file": alignments,
+            "faces_dir": [None for _ in range(len(alignments))],
+            "frames_dir": [None for _ in range(len(alignments))],
+        }
 
     def _get_frames_locations(self) -> dict[str, list[str | None]]:
         """ Obtain the full path to frame locations along with corresponding alignments file
@@ -176,7 +177,7 @@ class Alignments():  # pylint:disable=too-few-public-methods
         elif job in self._requires_frames:  # Jobs that require a frames folder
             retval = self._get_frames_locations()
 
-        elif job in self._requires_faces and job not in self._requires_frames:
+        elif job in self._requires_faces:
             # Jobs that require faces as input
             faces = [os.path.join(self._args.faces_dir, folder)
                      for folder in os.listdir(self._args.faces_dir)

@@ -366,14 +366,13 @@ class _DiskIO():  # pylint:disable=too-few-public-methods
         num_alignments = len(alignments)
         num_faces = len(faces)
         if num_alignments == num_faces:
-            retval = False
+            return False
         elif num_alignments > num_faces:
             faces.extend([DetectedFace() for _ in range(num_faces, num_alignments)])
-            retval = True
+            return True
         else:
             del faces[num_alignments:]
-            retval = True
-        return retval
+            return True
 
     def extract(self) -> None:
         """ Extract the current faces to a folder.
@@ -631,8 +630,7 @@ class FaceUpdate():
         if not self._updated_frame_indices and not self._tk_unsaved.get():
             self._tk_unsaved.set(True)
         self._updated_frame_indices.add(frame_index)
-        retval = self._frame_faces[frame_index]
-        return retval
+        return self._frame_faces[frame_index]
 
     def add(self, frame_index: int, pnt_x: int, width: int, pnt_y: int, height: int) -> None:
         """ Add a :class:`~lib.align.DetectedFace` object to the current frame with the

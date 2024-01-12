@@ -65,8 +65,7 @@ class Output():
 
         Writers that write to a stream have a frame_order paramater to dictate
         the order in which frames should be written out (eg. gif/ffmpeg) """
-        retval = hasattr(self, "_frame_order")
-        return retval
+        return hasattr(self, "_frame_order")
 
     @classmethod
     def _set_frame_order(cls,
@@ -124,11 +123,11 @@ class Output():
         if separate_mask:
             retval.append(os.path.join(self.output_folder, "masks", out_filename))
 
-        if separate_mask and not self._subfolders_created:
-            locations = [os.path.dirname(loc) for loc in retval]
-            logger.debug("Creating sub-folders: %s", locations)
-            for location in locations:
-                os.makedirs(location, exist_ok=True)
+            if not self._subfolders_created:
+                locations = [os.path.dirname(loc) for loc in retval]
+                logger.debug("Creating sub-folders: %s", locations)
+                for location in locations:
+                    os.makedirs(location, exist_ok=True)
 
         logger.trace("in filename: '%s', out filename: '%s'", filename, retval)  # type:ignore
         return retval
